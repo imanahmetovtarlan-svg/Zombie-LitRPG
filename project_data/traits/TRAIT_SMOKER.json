@@ -1,0 +1,14 @@
+{
+  "id": "TRAIT_SMOKER",
+  "name": "Smoker",
+  "status": "DRAFT",
+  "version": 1,
+  "effects": {
+    "stress_without_nicotine": 0.15,
+    "stamina_mult": 0.95
+  },
+  "evolves_to": [
+    "TRAIT_QUITTING_SMOKER",
+    "TRAIT_FORMER_SMOKER"
+  ]
+}
