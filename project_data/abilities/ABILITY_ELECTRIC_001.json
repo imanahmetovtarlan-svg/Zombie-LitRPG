@@ -1,0 +1,16 @@
+{
+  "id": "ABILITY_ELECTRIC_001",
+  "name": "Electrical Potential",
+  "status": "DRAFT",
+  "version": 1,
+  "stage": 1,
+  "known_effects": [
+    "minor electrical discharge through conductive objects"
+  ],
+  "branches": [
+    "weapon_conduction",
+    "neural_acceleration",
+    "discharge"
+  ],
+  "notes": "Branches emerge through usage patterns rather than menu-only selection."
+}
