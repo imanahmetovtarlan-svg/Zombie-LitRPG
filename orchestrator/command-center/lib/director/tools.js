@@ -2,10 +2,41 @@
 // CANON promotion is a user-only action in the Command Center UI.
 import { ENTITY_TYPES, listEntities, readEntity, createDraft, checkEntity } from "../registry.js";
 import { listTasks, createTask } from "../tasks.js";
+import fs from "node:fs";
+import path from "node:path";
+import { repoRoot } from "../paths.js";
+
+// Canon sources the Director may read (see docs/ORCHESTRATOR_SPEC.md "Canon sources").
+export const DOCS = {
+  WORLD_BIBLE: "docs/WORLD_BIBLE.md",
+  WORLD_RULES: "docs/world_rules.json",
+  GAME_SYSTEMS: "docs/GAME_SYSTEMS.md",
+  ORCHESTRATOR_SPEC: "docs/ORCHESTRATOR_SPEC.md",
+  CANON_KEEPER: "orchestrator/prompts/CANON_KEEPER.md",
+  HISTORICAL_CONSISTENCY: "orchestrator/prompts/HISTORICAL_CONSISTENCY.md",
+};
+
+function readDoc(name) {
+  if (!Object.hasOwn(DOCS, name)) throw new Error(`Unknown doc ${name}. Known: ${Object.keys(DOCS).join(", ")}`);
+  return { file: DOCS[name], content: fs.readFileSync(path.join(repoRoot(), DOCS[name]), "utf8") };
+}
 
 const typeEnum = Object.keys(ENTITY_TYPES);
 
 export const TOOLS = [
+  {
+    name: "read_doc",
+    description:
+      "Read a canon source document: WORLD_BIBLE and WORLD_RULES (setting rules, late 1945 / early 1946), GAME_SYSTEMS, " +
+      "ORCHESTRATOR_SPEC, or the CANON_KEEPER / HISTORICAL_CONSISTENCY checklists. Read the relevant ones before proposing lore, " +
+      "mechanics, technology, weapons, vehicles or medicine. Open questions listed in the World Bible are not decided.",
+    input_schema: {
+      type: "object",
+      properties: { name: { type: "string", enum: Object.keys(DOCS) } },
+      required: ["name"],
+      additionalProperties: false,
+    },
+  },
   {
     name: "list_entities",
     description:
@@ -92,6 +123,8 @@ export const MUTATING_TOOLS = new Set(["create_draft", "create_task"]);
 
 export function runTool(name, input = {}) {
   switch (name) {
+    case "read_doc":
+      return readDoc(input.name);
     case "list_entities":
       return listEntities(input);
     case "read_entity":

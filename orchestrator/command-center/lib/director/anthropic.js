@@ -10,6 +10,8 @@ const MAX_STEPS = 12;
 const RUNTIME_RULES = `
 ## Command Center runtime
 You are running inside the Command Center. You act on the project only through your tools.
+- Read the canon sources with read_doc (WORLD_BIBLE, WORLD_RULES) before proposing setting content, and apply the
+  HISTORICAL_CONSISTENCY checklist to ordinary technology, weapons, transport, medicine and logistics.
 - Search with list_entities / read_entity before creating anything new.
 - Run check_canon on a candidate before create_draft and report the verdict.
 - create_draft only saves DRAFT files. You cannot approve, reject or promote anything:

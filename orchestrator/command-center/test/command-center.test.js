@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "cc-test-"));
-for (const dir of ["project_data", "tasks", "orchestrator/prompts"]) {
+for (const dir of ["project_data", "tasks", "orchestrator/prompts", "docs"]) {
   fs.cpSync(path.join(repo, dir), path.join(tmp, dir), { recursive: true });
 }
 process.env.CC_ROOT = tmp;
@@ -45,7 +45,8 @@ test("lists and reads entities from project_data", async () => {
   assert.equal(list.status, 200);
   assert.deepEqual(list.body.map((e) => e.id), ["TRAIT_ATHLETE", "TRAIT_OLD_LEG_INJURY", "TRAIT_SMOKER"]);
   const one = await call("GET", "/api/entities/CHAR_MAIN_001");
-  assert.equal(one.body.entity.name, "Main Survivor");
+  const onDisk = JSON.parse(fs.readFileSync(path.join(tmp, "project_data/characters/CHAR_MAIN_001.json"), "utf8"));
+  assert.deepEqual(one.body.entity, onDisk);
   assert.equal(one.body.type, "characters");
   assert.equal((await call("GET", "/api/entities/NOPE_X")).status, 404);
   assert.equal((await call("GET", "/api/entities/..%2F..%2Fetc")).status, 400);
@@ -126,13 +127,61 @@ test("task board shows columns and moves tasks between folders", async () => {
   assert.equal((await call("POST", "/api/tasks/TASK-0001/move", { status: "LOL" })).status, 400);
 
   const { createTask } = await import("../lib/tasks.js");
+  const maxId = Math.max(...Object.values(board.body).flat().map((x) => Number(x.id.slice(5))));
   const t = createTask({ title: "Inventory grid", owner: "Technical Agent", acceptance_criteria: ["grid renders"], dependencies: ["TASK-0001"] });
-  assert.equal(t.id, "TASK-0002");
-  assert.equal((await call("GET", "/api/tasks")).body.BACKLOG[0].id, "TASK-0002");
+  assert.equal(t.id, `TASK-${String(maxId + 1).padStart(4, "0")}`);
+  assert.ok((await call("GET", "/api/tasks")).body.BACKLOG.some((x) => x.id === t.id));
 });
 
-test("canon check flags non-CANON references when approving a character", async () => {
-  const res = await call("GET", "/api/entities/CHAR_MAIN_001");
+const SEVEN = { strength: 1, agility: 1, endurance: 1, perception: 1, intelligence: 1, resolve: 1, reaction: 1 };
+
+test("canon check flags non-CANON references (incl. profession) when approving a character", async () => {
+  await call("POST", "/api/entities", {
+    type: "professions", entity: { id: "PROF_TEST_MEDIC", name: "Test medic" },
+  });
+  const created = await call("POST", "/api/entities", {
+    type: "characters",
+    entity: { id: "CHAR_TEST_REF", name: "Ref test", attributes: SEVEN, profession: "PROF_TEST_MEDIC", traits: ["TRAIT_NOPE"] },
+  });
+  assert.equal(created.status, 201);
+  const res = await call("GET", "/api/entities/CHAR_TEST_REF");
   assert.equal(res.body.check.verdict, "PASS_WITH_WARNINGS");
-  assert.ok(res.body.check.warnings.some((w) => w.includes("TRAIT_ATHLETE")));
+  assert.ok(res.body.check.warnings.some((w) => w.includes("PROF_TEST_MEDIC") && w.includes("not CANON")));
+  assert.ok(res.body.check.warnings.some((w) => w.includes("missing entity TRAIT_NOPE")));
+});
+
+test("characters must use exactly the seven canonical attributes", async () => {
+  const { checkEntity } = await import("../lib/registry.js");
+  const base = { id: "CHAR_T", name: "T", status: "DRAFT", version: 1 };
+  assert.equal(checkEntity("characters", { ...base, attributes: SEVEN }).verdict, "PASS");
+  const old = checkEntity("characters", { ...base, attributes: { ...SEVEN, speed: 1, will: 1 } });
+  assert.equal(old.verdict, "REJECT");
+  assert.ok(old.errors.some((e) => e.includes('"speed"')));
+  const { resolve, ...six } = SEVEN;
+  assert.ok(checkEntity("characters", { ...base, attributes: six }).errors.some((e) => e.includes('"resolve"')));
+});
+
+test("new Zaraza entity types are accepted with their prefixes", async () => {
+  for (const [type, id] of [["infected", "INFECTED_T1"], ["vehicles", "VEHICLE_T1"], ["districts", "DISTRICT_T1"],
+    ["hives", "HIVE_T1"], ["technology", "TECH_T1"]]) {
+    const res = await call("POST", "/api/entities", { type, entity: { id, name: id } });
+    assert.equal(res.status, 201, `${type}: ${JSON.stringify(res.body)}`);
+  }
+  assert.equal((await call("POST", "/api/entities", { type: "hives", entity: { id: "TECH_X", name: "x" } })).status, 400);
+});
+
+test("repo data passes the canon check", async () => {
+  const all = (await call("GET", "/api/entities")).body;
+  assert.ok(all.length > 0);
+  for (const e of all) {
+    const res = await call("GET", `/api/entities/${e.id}`);
+    assert.notEqual(res.body.check.verdict, "REJECT", `${e.id}: ${res.body.check.errors.join("; ")}`);
+  }
+});
+
+test("Director can read canon docs, but nothing outside the allowlist", async () => {
+  const res = await chat("doc world_rules");
+  assert.match(res.body.reply, /core_attributes/);
+  const bad = await chat("doc ../../etc/passwd");
+  assert.match(bad.body.reply, /^Error: Unknown doc/);
 });

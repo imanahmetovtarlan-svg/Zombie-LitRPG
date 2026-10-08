@@ -150,17 +150,29 @@ export function checkEntity(type, entity, { forCanon = false } = {}) {
     if (!attrs || typeof attrs !== "object" || Array.isArray(attrs)) {
       errors.push("characters require an attributes object");
     } else {
+      // character.schema.json: all seven attributes required, no others allowed.
+      for (const k of CHARACTER_ATTRIBUTES) {
+        if (!(k in attrs)) errors.push(`missing attribute "${k}"`);
+      }
       for (const [k, v] of Object.entries(attrs)) {
-        if (!CHARACTER_ATTRIBUTES.includes(k)) warnings.push(`unknown attribute "${k}"`);
-        else if (typeof v !== "number" || v < 0) errors.push(`attribute ${k} must be a number >= 0`);
+        if (!CHARACTER_ATTRIBUTES.includes(k)) {
+          errors.push(`unknown attribute "${k}" (allowed: ${CHARACTER_ATTRIBUTES.join(", ")})`);
+        } else if (typeof v !== "number" || v < 0) errors.push(`attribute ${k} must be a number >= 0`);
       }
     }
-    for (const key of ["traits", "abilities", "conditions", "foreign_fragments"]) {
+    for (const key of ["traits", "habits", "abilities", "conditions", "foreign_fragments"]) {
       if (key in entity && (!Array.isArray(entity[key]) || entity[key].some((v) => typeof v !== "string"))) {
         errors.push(`${key} must be an array of strings`);
       }
     }
-    const refs = [...(entity.traits ?? []), ...(entity.abilities ?? [])].filter((r) => typeof r === "string");
+    if ("profession" in entity && entity.profession !== null && typeof entity.profession !== "string") {
+      errors.push("profession must be a PROF_ id or null");
+    }
+    const refs = [
+      ...(Array.isArray(entity.traits) ? entity.traits : []),
+      ...(Array.isArray(entity.abilities) ? entity.abilities : []),
+      ...(typeof entity.profession === "string" ? [entity.profession] : []),
+    ].filter((r) => typeof r === "string");
     for (const ref of refs) {
       const target = all.find((r) => r.entity.id === ref);
       if (!target) warnings.push(`references missing entity ${ref}`);

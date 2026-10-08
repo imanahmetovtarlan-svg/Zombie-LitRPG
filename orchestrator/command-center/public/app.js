@@ -175,13 +175,16 @@ $("#draft-form").addEventListener("submit", async (e) => {
     $("#d-result").replaceChildren(el("div", { class: "verdict REJECT" }, errorText(err)));
   }
 });
-const PREFIX = { characters: "CHAR_", traits: "TRAIT_", abilities: "ABILITY_", items: "ITEM_", locations: "LOC_", recipes: "RECIPE_", factions: "FACTION_" };
+let PREFIX = {};
+const CHARACTER_ATTRIBUTES = ["strength", "agility", "endurance", "perception", "intelligence", "resolve", "reaction"];
 $("#d-type").addEventListener("change", () => {
   try {
     const entity = JSON.parse($("#d-json").value);
     if (typeof entity.id === "string" && Object.values(PREFIX).some((p) => entity.id === p)) {
       entity.id = PREFIX[$("#d-type").value] ?? "";
-      if ($("#d-type").value === "characters" && !entity.attributes) entity.attributes = {};
+      if ($("#d-type").value === "characters" && !entity.attributes) {
+        entity.attributes = Object.fromEntries(CHARACTER_ATTRIBUTES.map((a) => [a, 1]));
+      }
       $("#d-json").value = JSON.stringify(entity, null, 2);
     }
   } catch {}
@@ -277,6 +280,7 @@ function refreshAll() {
   const health = await api("/api/health");
   $("#director-badge").textContent = `director: ${health.director}`;
   taskStatuses = health.taskStatuses;
+  PREFIX = health.entityPrefixes;
   for (const t of health.entityTypes) {
     $("#f-type").append(el("option", { value: t }, t));
     $("#d-type").append(el("option", { value: t, selected: t === "traits" }, t));

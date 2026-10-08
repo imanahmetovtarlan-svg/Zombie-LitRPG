@@ -1,7 +1,7 @@
 // Offline Director: a small command parser so the Command Center works without an API key.
 // It uses the same tools as the LLM Director, so it can never approve anything either.
 import { ENTITY_TYPES } from "../registry.js";
-import { runTool, MUTATING_TOOLS } from "./tools.js";
+import { runTool, MUTATING_TOOLS, DOCS } from "./tools.js";
 
 const HELP = `Offline Director (no ANTHROPIC_API_KEY set). Commands:
 • list [type] [status]  /  список [тип] — list entities (types: ${Object.keys(ENTITY_TYPES).join(", ")})
@@ -10,6 +10,7 @@ const HELP = `Offline Director (no ANTHROPIC_API_KEY set). Commands:
 • draft <type> <ID> <name…>  /  черновик … — create a minimal DRAFT
 • draft <type> {json} — create a DRAFT from JSON
 • tasks  /  задачи — show the task board
+• doc <${Object.keys(DOCS).join("|")}>  /  док … — read a canon document
 Approve/Reject happens only in the Review panel.`;
 
 const ID_RE = /\b[A-Z][A-Z0-9]*_[A-Z0-9_]+\b/;
@@ -49,6 +50,10 @@ export async function chat(history) {
         .map(([col, tasks]) => `${col}: ${tasks.length ? tasks.map((t) => `${t.id} ${t.title}`).join("; ") : "—"}`)
         .join("\n");
       return { reply, actions };
+    }
+    if (["doc", "док"].includes(word)) {
+      const name = String(rest[0] ?? "").toUpperCase().replace(/\.(MD|JSON)$/, "");
+      return { reply: call(actions, "read_doc", { name }).content, actions };
     }
     if (["draft", "черновик"].includes(word)) {
       const type = rest[0]?.toLowerCase();

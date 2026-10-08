@@ -66,6 +66,7 @@ export async function handle(req, res) {
         ok: true,
         director: (await director()).name,
         entityTypes: Object.keys(ENTITY_TYPES),
+        entityPrefixes: ENTITY_TYPES,
         taskStatuses: TASK_STATUSES,
       });
     }
