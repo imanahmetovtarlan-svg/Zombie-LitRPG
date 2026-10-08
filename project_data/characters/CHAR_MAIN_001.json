@@ -1,0 +1,27 @@
+{
+  "id": "CHAR_MAIN_001",
+  "name": "Main Survivor",
+  "status": "DRAFT",
+  "version": 1,
+  "attributes": {
+    "strength": 1.2,
+    "speed": 1,
+    "endurance": 1.1,
+    "constitution": 1.05,
+    "agility": 1,
+    "reaction": 1.05,
+    "intelligence": 1,
+    "perception": 1,
+    "will": 1.1
+  },
+  "traits": [
+    "TRAIT_ATHLETE",
+    "TRAIT_OLD_LEG_INJURY"
+  ],
+  "skills": {},
+  "abilities": [
+    "ABILITY_ELECTRIC_001"
+  ],
+  "conditions": [],
+  "foreign_fragments": []
+}
