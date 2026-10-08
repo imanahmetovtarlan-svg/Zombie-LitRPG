@@ -18,6 +18,7 @@
     },
     "status": {
       "enum": [
+        "PROPOSED",
         "BACKLOG",
         "ACTIVE",
         "REVIEW",
@@ -46,6 +47,28 @@
       "items": {
         "type": "string"
       }
+    },
+    "goal": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "expected_files": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "tests": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "source": {
+      "type": "string",
+      "description": "Runtime run that proposed the task, e.g. RUN-20261008-120000-ab12"
     }
   }
 }

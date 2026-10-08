@@ -7,3 +7,6 @@ build/
 .DS_Store
 Thumbs.db
 *.blend1
+
+# Multi-agent runtime run logs (local)
+orchestrator/runs/

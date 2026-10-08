@@ -1,42 +1,31 @@
-// Director backed by Claude via the Anthropic SDK (manual tool-use loop).
+// Director backed by Claude (manual tool-use loop). It inspects with read-only tools and hands
+// all content/design/implementation work to the multi-agent pipeline via `delegate`.
 import fs from "node:fs";
 import path from "node:path";
 import { promptsDir } from "../paths.js";
 import { TOOLS, MUTATING_TOOLS, runTool } from "./tools.js";
+import { getClient, baseRequest, DIRECTOR_MODEL } from "../runtime/llm.js";
 
-const MODEL = process.env.DIRECTOR_MODEL || "claude-opus-5-5";
+export { isAvailable } from "../runtime/llm.js";
+
 const MAX_STEPS = 12;
+const TOOL_NAMES = new Set(TOOLS.map((t) => t.name));
 
 const RUNTIME_RULES = `
 ## Command Center runtime
-You are running inside the Command Center. You act on the project only through your tools.
-- Read the canon sources with read_doc (WORLD_BIBLE, WORLD_RULES) before proposing setting content, and apply the
-  HISTORICAL_CONSISTENCY checklist to ordinary technology, weapons, transport, medicine and logistics.
-- Search with list_entities / read_entity before creating anything new.
-- Run check_canon on a candidate before create_draft and report the verdict.
-- create_draft only saves DRAFT files. You cannot approve, reject or promote anything:
-  the user does that in the Review panel. Never claim something is CANON unless its file says so.
-- Answer in the user's language. End with the IDs/files affected, if any.`;
+You are the only agent the user talks to. You act on the project only through your tools.
+- Questions about existing canon, entities or tasks: answer yourself with read_doc / list_entities / read_entity / list_tasks.
+- Anything that creates or changes lore, mechanics, entities, assets or implementation work: call delegate once with the
+  user's request and a precise brief (goal, constraints, relevant IDs and docs, what a good result looks like).
+  The Router picks specialists, the Merger combines them, and results are saved as DRAFT entities / PROPOSED tasks.
+- After delegate, report to the user: which agents ran and their verdicts, what was created (IDs), conflicts, open questions,
+  and that they must approve or reject in the Review panel. Do not restate whole entities.
+- You cannot approve, reject or promote anything. Never claim something is CANON unless its file says so.
+- Answer in the user's language.`;
 
 function systemPrompt() {
   const director = fs.readFileSync(path.join(promptsDir(), "DIRECTOR.md"), "utf8");
   return director + "\n" + RUNTIME_RULES;
-}
-
-let clientPromise;
-async function getClient() {
-  clientPromise ??= import("@anthropic-ai/sdk").then(({ default: Anthropic }) => new Anthropic());
-  return clientPromise;
-}
-
-export async function isAvailable() {
-  if (!process.env.ANTHROPIC_API_KEY && !process.env.ANTHROPIC_AUTH_TOKEN) return false;
-  try {
-    await getClient();
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 // history: [{role: "user"|"assistant", content: string}], last entry is the new user message.
@@ -47,12 +36,7 @@ export async function chat(history) {
 
   for (let step = 0; step < MAX_STEPS; step++) {
     const response = await client.beta.messages.create({
-      model: MODEL,
-      max_tokens: 16000,
-      thinking: { type: "adaptive" },
-      output_config: { effort: "medium" },
-      betas: ["server-side-fallback-2026-07-01"],
-      fallbacks: "default",
+      ...baseRequest({ model: DIRECTOR_MODEL, effort: "medium" }),
       system: systemPrompt(),
       tools: TOOLS,
       messages,
@@ -72,8 +56,12 @@ export async function chat(history) {
     const results = [];
     for (const block of toolUses) {
       try {
-        const result = runTool(block.name, block.input);
-        actions.push({ tool: block.name, input: block.input, ok: true, mutating: MUTATING_TOOLS.has(block.name) });
+        if (!TOOL_NAMES.has(block.name)) throw new Error(`Unknown tool ${block.name}`);
+        const result = await runTool(block.name, block.input);
+        actions.push({
+          tool: block.name, input: block.input, ok: true, mutating: MUTATING_TOOLS.has(block.name),
+          ...(block.name === "delegate" ? { run: result } : {}),
+        });
         results.push({ type: "tool_result", tool_use_id: block.id, content: JSON.stringify(result) });
       } catch (err) {
         actions.push({ tool: block.name, input: block.input, ok: false, error: err.message });

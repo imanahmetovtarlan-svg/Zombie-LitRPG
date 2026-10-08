@@ -130,7 +130,12 @@ test("task board shows columns and moves tasks between folders", async () => {
   const maxId = Math.max(...Object.values(board.body).flat().map((x) => Number(x.id.slice(5))));
   const t = createTask({ title: "Inventory grid", owner: "Technical Agent", acceptance_criteria: ["grid renders"], dependencies: ["TASK-0001"] });
   assert.equal(t.id, `TASK-${String(maxId + 1).padStart(4, "0")}`);
-  assert.ok((await call("GET", "/api/tasks")).body.BACKLOG.some((x) => x.id === t.id));
+  const after = (await call("GET", "/api/tasks")).body;
+  assert.ok(after.PROPOSED.some((x) => x.id === t.id), "new tasks start as PROPOSED");
+  assert.equal((await call("POST", `/api/tasks/${t.id}/move`, { status: "ACTIVE" })).status, 409);
+  const approved = await call("POST", `/api/tasks/${t.id}/approve`, {});
+  assert.equal(approved.body.status, "BACKLOG");
+  assert.ok(fs.existsSync(path.join(tmp, `tasks/backlog/${t.id}.json`)));
 });
 
 const SEVEN = { strength: 1, agility: 1, endurance: 1, perception: 1, intelligence: 1, resolve: 1, reaction: 1 };

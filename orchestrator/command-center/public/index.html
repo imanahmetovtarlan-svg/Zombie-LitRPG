@@ -18,7 +18,10 @@
       <div id="chat-log" class="chat-log" aria-live="polite"></div>
       <form id="chat-form" class="chat-form">
         <textarea id="chat-input" rows="3" placeholder="Напиши Director… (Ctrl+Enter — отправить)" required></textarea>
-        <button type="submit" id="chat-send">Send</button>
+        <div class="chat-buttons">
+          <button type="submit" id="chat-send">Send</button>
+          <button type="button" id="run-agents" title="Run Router → specialists → Merger on this text">▶ Agents</button>
+        </div>
       </form>
     </section>
 
@@ -28,6 +31,7 @@
         <button role="tab" data-tab="review">Review <span id="review-count" class="count"></span></button>
         <button role="tab" data-tab="draft">New draft</button>
         <button role="tab" data-tab="tasks">Tasks</button>
+        <button role="tab" data-tab="runs">Runs</button>
       </nav>
 
       <div id="tab-entities" class="tab">
@@ -46,7 +50,7 @@
       </div>
 
       <div id="tab-review" class="tab" hidden>
-        <p class="muted">Only you can promote DRAFT → CANON. Rejected drafts move to <code>project_data/_rejected/</code>.</p>
+        <p class="muted">Only you can promote DRAFT → CANON and PROPOSED → BACKLOG. Rejected items are archived, not deleted.</p>
         <div id="review-list"></div>
       </div>
 
@@ -67,6 +71,14 @@
           </div>
           <div id="d-result"></div>
         </form>
+      </div>
+
+      <div id="tab-runs" class="tab" hidden>
+        <p class="muted">Director → Router → specialists → Merger → DRAFT / PROPOSED → your approve.</p>
+        <div class="split">
+          <ul id="run-list" class="list"></ul>
+          <div id="run-detail" class="detail muted">Select a run.</div>
+        </div>
       </div>
 
       <div id="tab-tasks" class="tab" hidden>

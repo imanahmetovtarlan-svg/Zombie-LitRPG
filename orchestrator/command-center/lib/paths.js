@@ -13,3 +13,4 @@ export const rejectedDir = () => path.join(dataDir(), "_rejected");
 export const tasksDir = () => path.join(repoRoot(), "tasks");
 export const decisionsLog = () => path.join(repoRoot(), "orchestrator", "decisions.jsonl");
 export const promptsDir = () => path.join(repoRoot(), "orchestrator", "prompts");
+export const runsDir = () => path.join(repoRoot(), "orchestrator", "runs");

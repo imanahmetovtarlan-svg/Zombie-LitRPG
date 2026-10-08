@@ -126,13 +126,50 @@ function flash(container, text, isError = false) {
   container.append(el("div", { class: `flash ${isError ? "verdict REJECT" : "muted"}` }, text));
 }
 
+function taskReviewButtons(id) {
+  const out = el("div", { class: "row" });
+  out.append(
+    el("button", { class: "primary", onclick: async () => {
+      try {
+        await api(`/api/tasks/${encodeURIComponent(id)}/approve`, { method: "POST", body: {} });
+        flash(out, `${id} → BACKLOG`);
+        refreshAll();
+      } catch (err) { flash(out, errorText(err), true); }
+    } }, "Approve → BACKLOG"),
+    el("button", { class: "danger", onclick: async () => {
+      const reason = prompt(`Reject ${id}. Reason (required):`, "");
+      if (!reason) return;
+      try {
+        await api(`/api/tasks/${encodeURIComponent(id)}/reject`, { method: "POST", body: { reason } });
+        flash(out, `${id} rejected`);
+        refreshAll();
+      } catch (err) { flash(out, errorText(err), true); }
+    } }, "Reject"),
+  );
+  return out;
+}
+
+function taskCard(t) {
+  return el("div", { class: "card" },
+    el("header", {}, el("span", {}, el("strong", {}, t.id), " ", t.title), statusTag("PROPOSED")),
+    el("div", { class: "muted" }, `${t.owner}${t.source ? ` · from ${t.source}` : ""}${t.dependencies?.length ? ` · deps: ${t.dependencies.join(", ")}` : ""}`),
+    t.goal ? el("p", {}, t.goal) : null,
+    el("details", {}, el("summary", {}, "acceptance criteria"),
+      el("ul", {}, (t.acceptance_criteria ?? []).map((c) => el("li", {}, c))),
+      t.out_of_scope?.length ? el("div", { class: "muted" }, `out of scope: ${t.out_of_scope.join("; ")}`) : null),
+    taskReviewButtons(t.id));
+}
+
 async function loadReview() {
   const box = $("#review-list");
   try {
-    const [drafts, reviews] = await Promise.all([api("/api/entities?status=DRAFT"), api("/api/entities?status=REVIEW")]);
+    const [drafts, reviews, board] = await Promise.all([
+      api("/api/entities?status=DRAFT"), api("/api/entities?status=REVIEW"), api("/api/tasks"),
+    ]);
     const items = [...reviews, ...drafts];
-    $("#review-count").textContent = items.length || "";
-    if (!items.length) return box.replaceChildren(el("p", { class: "muted" }, "Nothing waiting for review."));
+    const proposed = board.PROPOSED ?? [];
+    $("#review-count").textContent = items.length + proposed.length || "";
+    if (!items.length && !proposed.length) return box.replaceChildren(el("p", { class: "muted" }, "Nothing waiting for review."));
     const cards = await Promise.all(items.map(async (r) => {
       const data = await api(`/api/entities/${encodeURIComponent(r.id)}`);
       return el("div", { class: "card" },
@@ -141,7 +178,12 @@ async function loadReview() {
         checkView(data.check),
         reviewButtons(r.id));
     }));
-    box.replaceChildren(...cards);
+    box.replaceChildren(
+      proposed.length ? el("h3", {}, `Proposed code tasks (${proposed.length})`) : null,
+      ...proposed.map(taskCard),
+      items.length ? el("h3", {}, `Entities (${items.length})`) : null,
+      ...cards,
+    );
   } catch (err) {
     box.replaceChildren(el("p", { class: "verdict REJECT" }, errorText(err)));
   }
@@ -229,11 +271,69 @@ async function loadTasks() {
   }
 }
 
+// ---------- runs ----------
+let roleLabels = {};
+
+function verdictTag(v) {
+  return el("span", { class: `verdict ${v}` }, v);
+}
+
+function runCard(run, { compact = false } = {}) {
+  // Accepts a full run (from /api/runs/:id) or the Director's summary of one.
+  const id = run.id ?? run.run_id;
+  const route = run.route?.assignments ? run.route.assignments.map((a) => a.role) : run.route ?? [];
+  const merge = run.merge ?? { summary: run.summary, conflicts: run.conflicts ?? [], open_questions: run.open_questions ?? [] };
+  const created = [
+    ...(run.created?.entities ?? []).map((e) => el("li", {}, el("a", { href: "#", onclick: (ev) => { ev.preventDefault(); showTab("entities"); showEntity(e.id); } }, e.id), " DRAFT ", verdictTag(e.verdict))),
+    ...(run.created?.tasks ?? []).map((t) => el("li", {}, `${t.id} PROPOSED — ${t.title}`)),
+  ];
+  return el("div", { class: "run" },
+    el("div", { class: "row" }, el("strong", {}, id), el("span", { class: "muted" }, `${run.engine}${run.ms ? ` · ${(run.ms / 1000).toFixed(1)}s` : ""}`)),
+    el("div", { class: "route" }, ["Director", "Router", ...route.map((r) => roleLabels[r] ?? r), "Merger"].flatMap((step, i, arr) =>
+      [el("span", { class: "chip" }, step), i < arr.length - 1 ? el("span", { class: "muted" }, "→") : null])),
+    el("ul", { class: "reports" }, (run.reports ?? []).map((r) => el("li", {},
+      el("strong", {}, roleLabels[r.role] ?? r.role), " ", verdictTag(r.verdict), r.summary ? ` — ${r.summary}` : "", r.error ? ` — ${r.error}` : "",
+      !compact && r.findings?.length ? el("ul", {}, r.findings.map((f) => el("li", { class: f.severity === "blocking" ? "verdict REJECT" : "" },
+        `[${f.severity}] ${f.issue}${f.ids?.length ? ` (${f.ids.join(", ")})` : ""}`))) : null))),
+    !compact && merge.summary ? el("div", { class: "merge" }, el("strong", {}, "Merger: "), merge.summary) : null,
+    merge.error ? el("div", { class: "verdict REJECT" }, `merge failed, mechanical merge used: ${merge.error}`) : null,
+    merge.conflicts?.length ? el("div", {}, el("strong", {}, "Conflicts"), el("ul", {}, merge.conflicts.map((c) => el("li", {}, c)))) : null,
+    merge.open_questions?.length ? el("div", {}, el("strong", {}, "Open questions"), el("ul", {}, merge.open_questions.map((q) => el("li", {}, q)))) : null,
+    el("div", {}, el("strong", {}, created.length ? "Waiting for your approval:" : "Nothing created."), created.length ? el("ul", {}, created) : null),
+    (run.failed ?? []).length ? el("ul", {}, run.failed.map((f) => el("li", { class: "verdict REJECT" }, `✗ ${f.kind} ${f.title ?? f.type ?? ""}: ${f.error}`))) : null,
+    compact ? el("button", { onclick: () => { showTab("runs"); showRun(id); } }, "Open run") : null,
+  );
+}
+
+async function loadRuns() {
+  const list = $("#run-list");
+  try {
+    const runs = await api("/api/runs");
+    if (!runs.length) return list.replaceChildren(el("li", { class: "muted" }, "No runs yet."));
+    list.replaceChildren(...runs.map((r) => el("li", { onclick: () => showRun(r.id) },
+      el("span", {}, el("span", { class: "id" }, r.id), " ", r.request.slice(0, 80)),
+      el("span", { class: "muted" }, `${r.created.entities.length}+${r.created.tasks.length}`))));
+  } catch (err) {
+    list.replaceChildren(el("li", { class: "verdict REJECT" }, errorText(err)));
+  }
+}
+
+async function showRun(id) {
+  const box = $("#run-detail");
+  try {
+    const run = await api(`/api/runs/${encodeURIComponent(id)}`);
+    box.replaceChildren(el("p", {}, el("strong", {}, "Request: "), run.request), runCard(run));
+  } catch (err) {
+    box.replaceChildren(el("div", { class: "verdict REJECT" }, errorText(err)));
+  }
+}
+
 // ---------- chat ----------
 const history = [];
 
 function renderMessage(role, content, actions = []) {
   const node = el("div", { class: `msg ${role}` }, content);
+  for (const a of actions) if (a.run) node.append(runCard(a.run, { compact: true }));
   if (actions.length) {
     node.append(el("div", { class: "actions" }, actions.map((a) =>
       el("div", { class: a.ok ? "" : "err" }, `${a.ok ? "✓" : "✗"} ${a.tool}${a.input?.id ? ` ${a.input.id}` : a.input?.entity?.id ? ` ${a.input.entity.id}` : ""}${a.error ? ` — ${a.error}` : ""}`))));
@@ -264,12 +364,34 @@ $("#chat-form").addEventListener("submit", async (e) => {
     input.focus();
   }
 });
+$("#run-agents").addEventListener("click", async () => {
+  const input = $("#chat-input");
+  const text = input.value.trim();
+  if (!text) return input.focus();
+  input.value = "";
+  renderMessage("user", `▶ ${text}`);
+  const btn = $("#run-agents");
+  btn.disabled = $("#chat-send").disabled = true;
+  const pending = el("div", { class: "msg assistant muted" }, "Agents are working… (Router → specialists → Merger)");
+  $("#chat-log").append(pending);
+  try {
+    const run = await api("/api/runs", { method: "POST", body: { request: text } });
+    pending.remove();
+    $("#chat-log").append(el("div", { class: "msg assistant" }, runCard(run, { compact: true })));
+    refreshAll();
+  } catch (err) {
+    pending.replaceChildren(`Error: ${errorText(err)}`);
+  } finally {
+    btn.disabled = $("#chat-send").disabled = false;
+  }
+});
 $("#chat-input").addEventListener("keydown", (e) => {
   if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) $("#chat-form").requestSubmit();
 });
 
 // ---------- boot ----------
 function refreshAll() {
+  loadRuns();
   loadEntities();
   loadReview();
   loadTasks();
@@ -281,12 +403,13 @@ function refreshAll() {
   $("#director-badge").textContent = `director: ${health.director}`;
   taskStatuses = health.taskStatuses;
   PREFIX = health.entityPrefixes;
+  roleLabels = health.roles;
   for (const t of health.entityTypes) {
     $("#f-type").append(el("option", { value: t }, t));
     $("#d-type").append(el("option", { value: t, selected: t === "traits" }, t));
   }
   renderMessage("assistant", health.director === "claude"
-    ? "Director online. Что делаем?"
-    : "Director в офлайн-режиме (нет ANTHROPIC_API_KEY). Напиши «help», чтобы увидеть команды.");
+    ? "Director online. Вопросы — отвечу сам; работу над контентом отдам агентам (или жми ▶ Agents, чтобы запустить их напрямую)."
+    : "Director в офлайн-режиме (нет ANTHROPIC_API_KEY). Напиши «help», чтобы увидеть команды. ▶ Agents запускает пайплайн в офлайн-режиме.");
   refreshAll();
 })();

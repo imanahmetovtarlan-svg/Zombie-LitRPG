@@ -83,6 +83,37 @@ Checks:
 ## Director cycle
 UNDERSTAND -> CHECK_CANON -> CHECK_PERIOD -> PLAN -> DELEGATE -> VERIFY -> PROPOSE -> APPROVE -> COMMIT
 
+## Multi-Agent Runtime
+```
+USER
+ ↓
+DIRECTOR            the only agent the user talks to; answers questions, delegates work
+ ↓
+ROUTER              picks the minimum set of specialists, writes a sub-brief for each
+ ├── Canon          (always included)
+ ├── Historical
+ ├── Game Design
+ ├── Character
+ ├── Level
+ ├── Asset
+ ├── Technical
+ └── QA             specialists run in parallel, read-only, each returns a structured report
+ ↓
+MERGER              resolves duplicates and conflicts, applies blocking findings, lists open questions
+ ↓
+DRAFT               entities → project_data/<type>/ as DRAFT; code tasks → tasks/proposed/ as PROPOSED
+ ↓
+USER APPROVE        Review panel only
+ ↓
+CANON / CODE TASK   DRAFT → CANON, PROPOSED → BACKLOG
+```
+
+Rules:
+- Specialists and the Merger can only read (docs, entities, tasks, rule-based canon check). Only the runtime writes, and only DRAFT / PROPOSED.
+- Every write is re-checked by the rule-based Canon Keeper; a REJECT is reported as failed, not saved.
+- Each run is recorded in `orchestrator/runs/RUN-*.json` (route, every report, merge, created and failed items).
+- Prompts: `orchestrator/prompts/{ROUTER,MERGER,CANON_KEEPER,HISTORICAL_CONSISTENCY,GAME_DESIGN,CHARACTER_LORE,LEVEL_WORLD,ASSET,TECHNICAL,QA}.md`.
+
 ## Canon sources
 Priority order:
 1. CANON entities in project_data

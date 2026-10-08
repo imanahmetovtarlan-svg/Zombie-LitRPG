@@ -8,7 +8,10 @@ import {
   ENTITY_TYPES, RegistryError, listEntities, readEntity, checkEntity,
   createDraft, approveEntity, rejectEntity,
 } from "./lib/registry.js";
-import { listTasks, moveTask, TASK_STATUSES } from "./lib/tasks.js";
+import { listTasks, moveTask, approveTask, rejectTask, BOARD_STATUSES } from "./lib/tasks.js";
+import { runPipeline } from "./lib/runtime/pipeline.js";
+import { listRuns, getRun } from "./lib/runtime/runs.js";
+import { ROLES } from "./lib/runtime/roles.js";
 import * as offlineDirector from "./lib/director/offline.js";
 import * as claudeDirector from "./lib/director/anthropic.js";
 
@@ -67,7 +70,8 @@ export async function handle(req, res) {
         director: (await director()).name,
         entityTypes: Object.keys(ENTITY_TYPES),
         entityPrefixes: ENTITY_TYPES,
-        taskStatuses: TASK_STATUSES,
+        taskStatuses: BOARD_STATUSES,
+        roles: Object.fromEntries(Object.entries(ROLES).map(([k, r]) => [k, r.label])),
       });
     }
     if (req.method === "GET" && pathname === "/api/entities") {
@@ -101,6 +105,30 @@ export async function handle(req, res) {
       const { status } = await readBody(req);
       return send(res, 200, moveTask(decodeURIComponent(match[1]), status));
     }
+    if (req.method === "POST" && (match = m(/^\/api\/tasks\/([^/]+)\/approve$/))) {
+      const body = await readBody(req);
+      return send(res, 200, approveTask(decodeURIComponent(match[1]), body));
+    }
+    if (req.method === "POST" && (match = m(/^\/api\/tasks\/([^/]+)\/reject$/))) {
+      const body = await readBody(req);
+      return send(res, 200, rejectTask(decodeURIComponent(match[1]), body));
+    }
+    if (req.method === "GET" && pathname === "/api/runs") {
+      return send(res, 200, listRuns());
+    }
+    if (req.method === "GET" && (match = m(/^\/api\/runs\/([^/]+)$/))) {
+      return send(res, 200, getRun(decodeURIComponent(match[1])));
+    }
+    if (req.method === "POST" && pathname === "/api/runs") {
+      const { request, brief } = await readBody(req);
+      if (!request || typeof request !== "string") throw new RegistryError("request is required");
+      try {
+        return send(res, 201, await runPipeline({ request, brief }));
+      } catch (err) {
+        console.error(err);
+        throw new RegistryError(`Pipeline failed: ${err.message}`, 502);
+      }
+    }
     if (req.method === "POST" && pathname === "/api/chat") {
       const { messages } = await readBody(req);
       if (!Array.isArray(messages) || !messages.length || messages.at(-1).role !== "user" ||
@@ -130,7 +158,10 @@ export async function handle(req, res) {
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const port = Number(process.env.PORT) || 4317;
   const host = process.env.HOST || "127.0.0.1";
-  http.createServer(handle).listen(port, host, async () => {
+  const server = http.createServer(handle);
+  // Multi-agent runs can take minutes; don't let Node cut the request off.
+  server.requestTimeout = 30 * 60 * 1000;
+  server.listen(port, host, async () => {
     console.log(`Command Center: http://${host}:${port}  (director: ${(await director()).name})`);
   });
 }

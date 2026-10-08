@@ -1,0 +1,24 @@
+{
+  "id": "TASK-0003",
+  "title": "Multi-Agent Runtime: Director → Router → specialists → Merger → approve",
+  "status": "REVIEW",
+  "owner": "Technical Agent",
+  "dependencies": [
+    "TASK-0001",
+    "TASK-0002"
+  ],
+  "acceptance_criteria": [
+    "Director delegates content and implementation work instead of writing files itself",
+    "Router selects the minimum set of specialists; Canon Keeper is always included",
+    "Canon, Historical, Game Design, Character, Level, Asset, Technical and QA roles each have a prompt and run in parallel with read-only tools",
+    "Merger combines reports into DRAFT entities and PROPOSED code tasks, listing conflicts and open questions",
+    "Only the user's approve promotes DRAFT → CANON and PROPOSED → BACKLOG",
+    "Every run is logged with route, reports, merge, created and failed items, and visible in the Command Center",
+    "Pipeline works offline (rule-based) without an API key"
+  ],
+  "out_of_scope": [
+    "Specialists writing files directly",
+    "Automatic CANON promotion",
+    "Streaming progress of a run to the UI"
+  ]
+}
