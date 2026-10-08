@@ -1,27 +1,33 @@
 {
   "id": "CHAR_MAIN_001",
-  "name": "Main Survivor",
+  "name": "Главный герой — молодой фронтовик",
   "status": "DRAFT",
-  "version": 1,
-  "attributes": {
-    "strength": 1.2,
-    "speed": 1,
-    "endurance": 1.1,
-    "constitution": 1.05,
-    "agility": 1,
-    "reaction": 1.05,
-    "intelligence": 1,
-    "perception": 1,
-    "will": 1.1
+  "version": 2,
+  "setting_version": "zaraza-0.1",
+  "background": {
+    "role": "молодой фронтовик, возвращающийся домой после войны",
+    "war_history": "единственный выживший из подразделения после прямого попадания по машине",
+    "psychology": [
+      "вина выжившего",
+      "фронтовая травма",
+      "компульсивная потребность спасать других как форму расплаты"
+    ]
   },
-  "traits": [
-    "TRAIT_ATHLETE",
-    "TRAIT_OLD_LEG_INJURY"
-  ],
+  "attributes": {
+    "strength": 1.1,
+    "agility": 1.05,
+    "endurance": 1.15,
+    "perception": 1.1,
+    "intelligence": 1,
+    "resolve": 1.2,
+    "reaction": 1.1
+  },
+  "traits": [],
+  "habits": [],
+  "profession": "PROF_FRONTOVIK",
   "skills": {},
-  "abilities": [
-    "ABILITY_ELECTRIC_001"
-  ],
+  "abilities": [],
   "conditions": [],
-  "foreign_fragments": []
+  "foreign_fragments": [],
+  "notes": "Стартовые коэффициенты рабочие и не являются CANON до одобрения. Конкретный Дар героя в Zaraza v0.1 пока не зафиксирован."
 }
