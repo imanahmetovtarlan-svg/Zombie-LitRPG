@@ -1,7 +1,7 @@
 {
   "id": "TASK-0001",
   "title": "Create Orchestrator Command Center MVP",
-  "status": "BACKLOG",
+  "status": "REVIEW",
   "owner": "Technical Agent",
   "dependencies": [],
   "acceptance_criteria": [

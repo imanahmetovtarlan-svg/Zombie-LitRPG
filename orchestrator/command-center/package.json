@@ -1,0 +1,17 @@
+{
+  "name": "zombie-litrpg-command-center",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Orchestrator Command Center MVP: Director chat, entity registry, DRAFT review, task board.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test test/*.test.js"
+  },
+  "optionalDependencies": {
+    "@anthropic-ai/sdk": "^0.132.1"
+  }
+}

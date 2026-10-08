@@ -11,3 +11,7 @@ Recommended MVP:
 - DRAFT / REVIEW / CANON controls.
 
 Never commit API keys. Use local `.env` and CI secrets.
+
+## Command Center
+The MVP lives in `orchestrator/command-center/` — see its README. Quick start:
+`cd orchestrator/command-center && npm install && npm start` → http://127.0.0.1:4317
