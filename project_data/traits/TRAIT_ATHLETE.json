@@ -1,0 +1,10 @@
+{
+  "id": "TRAIT_ATHLETE",
+  "name": "Athlete",
+  "status": "DRAFT",
+  "version": 1,
+  "effects": {
+    "endurance_mult": 1.1,
+    "recovery_mult": 1.08
+  }
+}
