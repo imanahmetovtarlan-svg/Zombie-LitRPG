@@ -1,0 +1,9 @@
+node_modules/
+.env
+.env.*
+dist/
+build/
+.cache/
+.DS_Store
+Thumbs.db
+*.blend1
