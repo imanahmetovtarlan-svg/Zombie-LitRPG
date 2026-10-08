@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Character",
+  "type": "object",
+  "required": [
+    "id",
+    "name",
+    "status",
+    "version",
+    "attributes"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "DRAFT",
+        "REVIEW",
+        "CANON",
+        "DEPRECATED"
+      ]
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "attributes": {
+      "type": "object",
+      "properties": {
+        "strength": {
+          "type": "number",
+          "minimum": 0
+        },
+        "speed": {
+          "type": "number",
+          "minimum": 0
+        },
+        "endurance": {
+          "type": "number",
+          "minimum": 0
+        },
+        "constitution": {
+          "type": "number",
+          "minimum": 0
+        },
+        "agility": {
+          "type": "number",
+          "minimum": 0
+        },
+        "reaction": {
+          "type": "number",
+          "minimum": 0
+        },
+        "intelligence": {
+          "type": "number",
+          "minimum": 0
+        },
+        "perception": {
+          "type": "number",
+          "minimum": 0
+        },
+        "will": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "traits": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "skills": {
+      "type": "object"
+    },
+    "abilities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "conditions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "foreign_fragments": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}
