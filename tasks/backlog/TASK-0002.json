@@ -1,0 +1,26 @@
+{
+  "id": "TASK-0002",
+  "title": "Zaraza canon migration v0.1",
+  "status": "BACKLOG",
+  "owner": "Canon Keeper + Historical Consistency Agent",
+  "dependencies": [
+    "TASK-0001"
+  ],
+  "acceptance_criteria": [
+    "New World Bible is the active setting source",
+    "Machine-readable world_rules.json exists",
+    "Director knows the 1945/1946 historical constraint",
+    "Historical Consistency Agent prompt exists",
+    "Character schema uses seven canonical attributes",
+    "Command Center supports infected, professions, vehicles, districts, hives and technology entity types",
+    "Old modern-setting assumptions remain DRAFT or are explicitly deprecated rather than silently treated as CANON"
+  ],
+  "out_of_scope": [
+    "Final date and season",
+    "Final city name",
+    "Final infection mechanism",
+    "Final protagonist ability",
+    "Full infected bestiary",
+    "Playable game implementation"
+  ]
+}
