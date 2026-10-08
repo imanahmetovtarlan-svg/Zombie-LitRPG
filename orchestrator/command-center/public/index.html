@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Command Center</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1>Zombie LitRPG · Command Center</h1>
+    <span id="director-badge" class="badge">director: …</span>
+  </header>
+
+  <main class="layout">
+    <section class="chat" aria-label="Director chat">
+      <h2>Director</h2>
+      <div id="chat-log" class="chat-log" aria-live="polite"></div>
+      <form id="chat-form" class="chat-form">
+        <textarea id="chat-input" rows="3" placeholder="Напиши Director… (Ctrl+Enter — отправить)" required></textarea>
+        <button type="submit" id="chat-send">Send</button>
+      </form>
+    </section>
+
+    <section class="panel">
+      <nav class="tabs" role="tablist">
+        <button role="tab" data-tab="entities" aria-selected="true">Entities</button>
+        <button role="tab" data-tab="review">Review <span id="review-count" class="count"></span></button>
+        <button role="tab" data-tab="draft">New draft</button>
+        <button role="tab" data-tab="tasks">Tasks</button>
+      </nav>
+
+      <div id="tab-entities" class="tab">
+        <div class="filters">
+          <select id="f-type"><option value="">all types</option></select>
+          <select id="f-status">
+            <option value="">all statuses</option>
+            <option>DRAFT</option><option>REVIEW</option><option>CANON</option><option>DEPRECATED</option>
+          </select>
+          <input id="f-q" type="search" placeholder="search…">
+        </div>
+        <div class="split">
+          <ul id="entity-list" class="list"></ul>
+          <div id="entity-detail" class="detail muted">Select an entity.</div>
+        </div>
+      </div>
+
+      <div id="tab-review" class="tab" hidden>
+        <p class="muted">Only you can promote DRAFT → CANON. Rejected drafts move to <code>project_data/_rejected/</code>.</p>
+        <div id="review-list"></div>
+      </div>
+
+      <div id="tab-draft" class="tab" hidden>
+        <form id="draft-form" class="draft-form">
+          <label>Type <select id="d-type"></select></label>
+          <label>Entity JSON
+            <textarea id="d-json" rows="14" spellcheck="false">{
+  "id": "TRAIT_",
+  "name": "",
+  "tags": [],
+  "notes": ""
+}</textarea>
+          </label>
+          <div class="row">
+            <button type="button" id="d-check">Canon check</button>
+            <button type="submit">Create DRAFT</button>
+          </div>
+          <div id="d-result"></div>
+        </form>
+      </div>
+
+      <div id="tab-tasks" class="tab" hidden>
+        <div id="board" class="board"></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js" type="module"></script>
+</body>
+</html>
