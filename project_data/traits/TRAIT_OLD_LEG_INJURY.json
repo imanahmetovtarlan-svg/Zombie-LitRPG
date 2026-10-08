@@ -1,0 +1,9 @@
+{
+  "id": "TRAIT_OLD_LEG_INJURY",
+  "name": "Old Leg Injury",
+  "status": "DRAFT",
+  "version": 1,
+  "effects": {
+    "sprint_pain_risk": 0.15
+  }
+}
