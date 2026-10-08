@@ -30,20 +30,17 @@
     },
     "attributes": {
       "type": "object",
+      "required": [
+        "strength",
+        "agility",
+        "endurance",
+        "perception",
+        "intelligence",
+        "resolve",
+        "reaction"
+      ],
       "properties": {
         "strength": {
-          "type": "number",
-          "minimum": 0
-        },
-        "speed": {
-          "type": "number",
-          "minimum": 0
-        },
-        "endurance": {
-          "type": "number",
-          "minimum": 0
-        },
-        "constitution": {
           "type": "number",
           "minimum": 0
         },
@@ -51,11 +48,7 @@
           "type": "number",
           "minimum": 0
         },
-        "reaction": {
-          "type": "number",
-          "minimum": 0
-        },
-        "intelligence": {
+        "endurance": {
           "type": "number",
           "minimum": 0
         },
@@ -63,17 +56,38 @@
           "type": "number",
           "minimum": 0
         },
-        "will": {
+        "intelligence": {
+          "type": "number",
+          "minimum": 0
+        },
+        "resolve": {
+          "type": "number",
+          "minimum": 0
+        },
+        "reaction": {
           "type": "number",
           "minimum": 0
         }
-      }
+      },
+      "additionalProperties": false
     },
     "traits": {
       "type": "array",
       "items": {
         "type": "string"
       }
+    },
+    "habits": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "profession": {
+      "type": [
+        "string",
+        "null"
+      ]
     },
     "skills": {
       "type": "object"

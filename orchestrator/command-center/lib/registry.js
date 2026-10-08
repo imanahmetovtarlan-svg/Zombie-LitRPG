@@ -12,13 +12,19 @@ export const ENTITY_TYPES = {
   locations: "LOC_",
   recipes: "RECIPE_",
   factions: "FACTION_",
+  infected: "INFECTED_",
+  professions: "PROF_",
+  vehicles: "VEHICLE_",
+  districts: "DISTRICT_",
+  hives: "HIVE_",
+  technology: "TECH_",
 };
 
 export const STATUSES = ["DRAFT", "REVIEW", "CANON", "DEPRECATED"];
 const ID_RE = /^[A-Z][A-Z0-9_]*$/;
 const CHARACTER_ATTRIBUTES = [
-  "strength", "speed", "endurance", "constitution", "agility",
-  "reaction", "intelligence", "perception", "will",
+  "strength", "agility", "endurance", "perception",
+  "intelligence", "resolve", "reaction",
 ];
 
 export class RegistryError extends Error {

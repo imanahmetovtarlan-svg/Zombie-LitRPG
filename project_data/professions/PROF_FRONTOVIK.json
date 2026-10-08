@@ -1,0 +1,14 @@
+{
+  "id": "PROF_FRONTOVIK",
+  "name": "Фронтовик",
+  "status": "DRAFT",
+  "version": 1,
+  "period": "1945-1946",
+  "effects": {
+    "combat_experience": "high",
+    "stress_exposure": "high",
+    "weapon_familiarity": "military",
+    "survival_adaptation": "above_average"
+  },
+  "notes": "Не класс. Это жизненный опыт, который влияет на стартовые навыки и реакции. Конкретные числовые бонусы пока не утверждены."
+}
